@@ -3,5 +3,5 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-RUN npm run build  # Compila TypeScript para JavaScript
-CMD ["node", "build/index.js"]  # Executa o arquivo compilado
+EXPOSE 3000
+CMD node build/index.js  # Formato correto para shell (sem colchetes)
