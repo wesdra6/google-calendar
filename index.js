@@ -1,23 +1,12 @@
-// index.js
-
+require('dotenv').config();
 const express = require('express');
-const dotenv = require('dotenv');
-
-// Carrega variáveis do .env
-dotenv.config();
-
 const app = express();
-const port = process.env.PORT || 3000;
+const router = require('./routes/googleRoutes');
 
-// Middleware (se necessário)
 app.use(express.json());
+app.use('/api', router);
 
-// Rota de teste
-app.get('/', (req, res) => {
-  res.send('Servidor rodando com sucesso!');
-});
-
-// Inicia o servidor
-app.listen(port, () => {
-  console.log(`Servidor rodando na porta ${port}`);
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
