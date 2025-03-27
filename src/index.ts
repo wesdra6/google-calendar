@@ -51,8 +51,8 @@ const schemas = {
       timeMin: z.string(),
       timeMax: z.string(),
       duration: z.number(), // duration in minutes
-    })
-  }
+    }),
+  },
 };
 
 // Tool definitions
@@ -183,7 +183,6 @@ const TOOL_DEFINITIONS = [
 const toolHandlers = {
   async list_events(args: unknown) {
     const { timeMin, timeMax, maxResults = 10 } = schemas.toolInputs.listEvents.parse(args);
-    
     const response = await calendar.events.list({
       calendarId: 'primary',
       timeMin: timeMin || new Date().toISOString(),
@@ -192,25 +191,24 @@ const toolHandlers = {
       singleEvents: true,
       orderBy: 'startTime',
     });
-
     const events = response.data.items || [];
     const formattedEvents = events.map(event => {
-      return `• ${event.summary}\n  Start: ${event.start?.dateTime || event.start?.date}\n  End: ${event.end?.dateTime || event.end?.date}\n  ID: ${event.id}`;
-    }).join('\n\n');
-
+      return `• ${event.summary}
+  Start: ${event.start?.dateTime || event.start?.date}
+  End: ${event.end?.dateTime || event.end?.date}
+  ID: ${event.id}`;
+    }).join('\n');
     return {
       content: [{
         type: "text" as const,
-        text: events.length ? 
-          `Found ${events.length} events:\n\n${formattedEvents}` :
+        text: events.length ?
+          `Found ${events.length} events:\n${formattedEvents}` :
           "No events found in the specified time range."
       }]
     };
   },
-
   async create_event(args: unknown) {
     const { summary, description, startTime, endTime, attendees } = schemas.toolInputs.createEvent.parse(args);
-
     const event = await calendar.events.insert({
       calendarId: 'primary',
       requestBody: {
@@ -227,50 +225,44 @@ const toolHandlers = {
         attendees: attendees?.map(email => ({ email })),
       },
     });
-
     return {
       content: [{
         type: "text" as const,
-        text: `Event created successfully!\nID: ${event.data.id}\nLink: ${event.data.htmlLink}`
+        text: `Event created successfully!
+ID: ${event.data.id}
+Link: ${event.data.htmlLink}`
       }]
     };
   },
-
   async update_event(args: unknown) {
     const { eventId, summary, description, startTime, endTime } = schemas.toolInputs.updateEvent.parse(args);
-
     // Get existing event
     const existingEvent = await calendar.events.get({
       calendarId: 'primary',
       eventId,
     });
-
     // Prepare update payload
     const updatePayload: any = {
       summary: summary || existingEvent.data.summary,
       description: description || existingEvent.data.description,
     };
-
     if (startTime) {
       updatePayload.start = {
         dateTime: startTime,
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       };
     }
-
     if (endTime) {
       updatePayload.end = {
         dateTime: endTime,
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       };
     }
-
     await calendar.events.update({
       calendarId: 'primary',
       eventId,
       requestBody: updatePayload,
     });
-
     return {
       content: [{
         type: "text" as const,
@@ -278,15 +270,12 @@ const toolHandlers = {
       }]
     };
   },
-
   async delete_event(args: unknown) {
     const { eventId } = schemas.toolInputs.deleteEvent.parse(args);
-
     await calendar.events.delete({
       calendarId: 'primary',
       eventId,
     });
-
     return {
       content: [{
         type: "text" as const,
@@ -294,10 +283,8 @@ const toolHandlers = {
       }]
     };
   },
-
   async find_free_time(args: unknown) {
     const { timeMin, timeMax, duration } = schemas.toolInputs.findFreeTime.parse(args);
-
     // Get existing events in the time range
     const response = await calendar.events.list({
       calendarId: 'primary',
@@ -306,18 +293,14 @@ const toolHandlers = {
       singleEvents: true,
       orderBy: 'startTime',
     });
-
     const events = response.data.items || [];
     const freeTimes: { start: string; end: string }[] = [];
-    
     let currentTime = new Date(timeMin);
     const endTime = new Date(timeMax);
     const durationMs = duration * 60000; // Convert minutes to milliseconds
-
     // Find free time slots
     for (const event of events) {
       const eventStart = new Date(event.start?.dateTime || event.start?.date || '');
-      
       // Check if there's enough time before the event
       if (eventStart.getTime() - currentTime.getTime() >= durationMs) {
         freeTimes.push({
@@ -325,10 +308,8 @@ const toolHandlers = {
           end: new Date(eventStart.getTime() - 1).toISOString(),
         });
       }
-      
       currentTime = new Date(event.end?.dateTime || event.end?.date || '');
     }
-
     // Check for free time after the last event
     if (endTime.getTime() - currentTime.getTime() >= durationMs) {
       freeTimes.push({
@@ -336,16 +317,14 @@ const toolHandlers = {
         end: endTime.toISOString(),
       });
     }
-
-    const formattedTimes = freeTimes.map(slot => 
+    const formattedTimes = freeTimes.map(slot =>
       `• ${new Date(slot.start).toLocaleString()} - ${new Date(slot.end).toLocaleString()}`
     ).join('\n');
-
     return {
       content: [{
         type: "text" as const,
         text: freeTimes.length ?
-          `Found ${freeTimes.length} available time slots:\n\n${formattedTimes}` :
+          `Found ${freeTimes.length} available time slots:\n${formattedTimes}` :
           `No available time slots found for duration of ${duration} minutes in the specified range.`
       }]
     };
@@ -368,69 +347,60 @@ const server = new Server(
 // Register tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   console.error("Tools requested by client");
+  console.error("Returning tools:", JSON.stringify(TOOL_DEFINITIONS, null, 2));
   return { tools: TOOL_DEFINITIONS };
 });
 
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-    console.error("Tools requested by client");
-    console.error("Returning tools:", JSON.stringify(TOOL_DEFINITIONS, null, 2));
-    return { tools: TOOL_DEFINITIONS };
-  });
-
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
-  
   try {
     const handler = toolHandlers[name as keyof typeof toolHandlers];
     if (!handler) {
       throw new Error(`Unknown tool: ${name}`);
     }
-    
     return await handler(args);
   } catch (error) {
-    console.error(`Error executing tool ${name}:`, error);
+    console.error(`Error executing tool ${name}:`, error.message || error);
     throw error;
   }
 });
 
 // Start the server
 async function main() {
-    try {
-      // Check for required environment variables
-      const requiredEnvVars = [
-        'GOOGLE_CLIENT_ID',
-        'GOOGLE_CLIENT_SECRET',
-        'GOOGLE_REDIRECT_URI',
-        'GOOGLE_REFRESH_TOKEN'
-      ];
-  
-      const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-      if (missingVars.length > 0) {
-        console.error(`Missing required environment variables: ${missingVars.join(', ')}`);
-        process.exit(1);
-      }
-  
-      console.error("Starting server with env vars:", {
-        clientId: process.env.GOOGLE_CLIENT_ID?.substring(0, 5) + '...',
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET?.substring(0, 5) + '...',
-        redirectUri: process.env.GOOGLE_REDIRECT_URI,
-        hasRefreshToken: !!process.env.GOOGLE_REFRESH_TOKEN
-      });
-  
-      const transport = new StdioServerTransport();
-      console.error("Created transport");
-      
-      await server.connect(transport);
-      console.error("Connected to transport");
-      
-      console.error("Google Calendar MCP Server running on stdio");
-    } catch (error) {
-      console.error("Startup error:", error);
+  try {
+    // Check for required environment variables
+    const requiredEnvVars = [
+      'GOOGLE_CLIENT_ID',
+      'GOOGLE_CLIENT_SECRET',
+      'GOOGLE_REDIRECT_URI',
+      'GOOGLE_REFRESH_TOKEN'
+    ];
+    const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+    if (missingVars.length > 0) {
+      console.error(`Missing required environment variables: ${missingVars.join(', ')}`);
       process.exit(1);
     }
+    console.error("Starting server with env vars:", {
+      clientId: process.env.GOOGLE_CLIENT_ID?.substring(0, 5) + '...',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET?.substring(0, 5) + '...',
+      redirectUri: process.env.GOOGLE_REDIRECT_URI,
+      hasRefreshToken: !!process.env.GOOGLE_REFRESH_TOKEN
+    });
+    const transport = new StdioServerTransport();
+    console.error("Created transport");
+    transport.on('data', (data) => {
+      console.error("Received data:", data.toString());
+    });
+    await server.connect(transport);
+    console.error("Connected to transport");
+    console.error("Google Calendar MCP Server running on stdio");
+  } catch (error) {
+    console.error("Startup error:", error.message || error);
+    process.exit(1);
   }
+}
 
 main().catch((error) => {
-  console.error("Fatal error:", error);
+  console.error("Fatal error:", error.message || error);
   process.exit(1);
 });
