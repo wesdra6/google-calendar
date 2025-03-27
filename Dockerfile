@@ -9,3 +9,4 @@ RUN npm run build  # Compila TS -> JS (gera /build)
 
 # Executa o arquivo compilado
 CMD ["node", "build/index.js"]
+RUN npx tsc --outDir build  # Força a compilação para /build
