@@ -1,14 +1,17 @@
 FROM node:18
 WORKDIR /app
 
-# 1. Instala dependências e compila o TypeScript
+# Instala dependências e compila
 COPY package*.json ./
 RUN npm install
 COPY . .
-RUN npm run build  # Isso criará os arquivos em /build
 
-# 2. Verifica se o build foi bem-sucedido
-RUN ls -l /app/build  # Lista os arquivos compilados (para debug)
+# Força a compilação TypeScript e verifica
+RUN npx tsc --outDir build && ls -l build/
 
-# 3. Executa o aplicativo
+# Verifica se as variáveis de ambiente existem
+RUN echo "Verificando variáveis:"
+RUN echo "CLIENT_ID=${GOOGLE_CLIENT_ID}"
+RUN echo "REDIRECT_URI=${GOOGLE_REDIRECT_URI}"
+
 CMD ["node", "build/index.js"]
