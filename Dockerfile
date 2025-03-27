@@ -4,4 +4,4 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 EXPOSE 3000
-CMD node src/server.js  # Arquivo principal padrão deste projeto
+CMD ["node", "src/server.js"]
