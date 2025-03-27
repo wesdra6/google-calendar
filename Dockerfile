@@ -1,7 +1,11 @@
 FROM node:18
 WORKDIR /app
+
+# Instala dependências e compila o TypeScript
 COPY package*.json ./
 RUN npm install
 COPY . .
-EXPOSE 3000
-CMD node build/index.js  # Formato correto para shell (sem colchetes)
+RUN npm run build  # Compila TS -> JS (gera /build)
+
+# Executa o arquivo compilado
+CMD ["node", "build/index.js"]
