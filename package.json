@@ -25,4 +25,8 @@
   "files": [
     "build"
   ]
+},
+"scripts": {
+  "start": "node index.js"
 }
+
