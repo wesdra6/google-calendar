@@ -21,7 +21,7 @@ ENV GOOGLE_REDIRECT_URI=$GOOGLE_REDIRECT_URI
 ENV GOOGLE_REFRESH_TOKEN=$GOOGLE_REFRESH_TOKEN
 
 # Expõe a porta do servidor
-EXPOSE 3000
+EXPOSE 3001
 
 # Comando para iniciar o servidor
 CMD ["node", "build/index.js"]
