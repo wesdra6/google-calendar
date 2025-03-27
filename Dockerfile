@@ -1,11 +1,14 @@
 FROM node:18
 WORKDIR /app
 
-# Instala dependências e compila o TypeScript
+# 1. Copia e instala dependências
 COPY package*.json ./
 RUN npm install
-COPY . .
-RUN npm run build  # Compila o TypeScript para JS
 
-# Executa o arquivo compilado
-CMD node build/index.js
+# 2. Copia todo o código e compila
+COPY . .
+RUN npm run build  # Executa "tsc" e ajusta permissões
+
+# 3. Configuração de execução
+ENV NODE_ENV=production
+CMD ["node", "build/index.js"]
